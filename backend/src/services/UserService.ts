@@ -3,7 +3,7 @@ import { prismaClient } from '../database/prismaClient';
 
 export class UserService {
   public async getUsers(): Promise<User[]> {
-    return prismaClient.user.findMany();
+    return await prismaClient.user.findMany();
   }
 
   public async getById(id: number): Promise<User | null> {
@@ -32,7 +32,7 @@ export class UserService {
     return newUser;
   }
 
-  public updateUser(
+  public async updateUser(
     id: number,
     name: string,
     email: string,
@@ -40,7 +40,7 @@ export class UserService {
     dateOfBirth: Date,
     password: string
   ): Promise<User | null> {
-    return prismaClient.user.update({
+    const updatedUser = await prismaClient.user.update({
       where: {
         id,
       },
@@ -52,13 +52,17 @@ export class UserService {
         password,
       },
     });
+
+    return updatedUser;
   }
 
   public async deleteUser(id: number): Promise<User | null> {
-    return prismaClient.user.delete({
+    const deletedUser = await prismaClient.user.delete({
       where: {
         id,
       },
     });
+
+    return deletedUser;
   }
 }

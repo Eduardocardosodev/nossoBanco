@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { UserService } from '../services/UserService';
 import { Request, Response } from 'express';
+import bcryptjs from 'bcryptjs';
 
 class UserController {
   private userService = new UserService();
@@ -17,7 +18,13 @@ class UserController {
   public async index(req: Request, res: Response): Promise<void> {
     try {
       const users = await this.userService.getUsers();
-      res.status(200).json(users);
+
+      if (users.length === 0) {
+        res.status(404).json({ message: 'Usuario nao encontrado' });
+        return;
+      }
+
+      res.status(200).json({ users });
     } catch (error) {
       res.status(500).json({ error: 'Erro ao listar os usuários' });
     }
@@ -31,10 +38,12 @@ class UserController {
 
       if (!user) {
         res.status(404).json({ message: 'Usuário nao encontrado.' });
+        return;
       }
 
       res.status(200).json(user);
     } catch (error) {
+      console.log(error);
       res.status(500).json({ message: 'Erro ao listar o usuário ' });
     }
   }
@@ -44,6 +53,8 @@ class UserController {
       const { name, password, cpf, dateOfBirth, email } = req.body;
 
       const parsedDateOfBirth = new Date(dateOfBirth);
+
+      // const password_hash = bcryptjs.hash(password,)
 
       const user = await this.userService.createUser(
         name,
@@ -56,7 +67,7 @@ class UserController {
       res.status(201).json({ message: 'Usuário criado com sucesso.' });
     } catch (error) {
       console.log('ERROR', error);
-      res.status(500).json({ error: 'Erro ao criar o usuário ' });
+      res.status(500).json({ message: 'Erro ao criar o usuário ' });
     }
   }
 
@@ -68,7 +79,13 @@ class UserController {
 
       const parsedDateOfBirth = new Date(dateOfBirth);
 
-      const user = await this.userService.updateUser(
+      const user = await this.userService.getById(Number(id));
+
+      if (!user) {
+        res.status(404).json({ message: 'Usuário nao encontrado.' });
+        return;
+      }
+      const updatedUser = await this.userService.updateUser(
         Number(id),
         name,
         email,
@@ -77,7 +94,7 @@ class UserController {
         dateOfBirth
       );
 
-      res.status(201).json({ message: 'Usuário atualizado com sucesso.' });
+      res.status(200).json({ message: 'Usuário atualizado com sucesso.' });
     } catch (error) {
       console.log('ERROR', error);
       res.status(500).json({ error: 'Erro ao atualizar o usuário ' });
@@ -88,9 +105,16 @@ class UserController {
     try {
       const { id } = req.params;
 
-      const user = await this.userService.deleteUser(Number(id));
+      const user = await this.userService.getById(Number(id));
 
-      res.status(201).json({ message: 'Usuário deletado com sucesso.' });
+      if (!user) {
+        res.status(404).json({ message: 'Usuário nao encontrado.' });
+        return;
+      }
+
+      const deletedUser = await this.userService.deleteUser(Number(id));
+
+      res.status(200).json({ message: 'Usuário deletado com sucesso.' });
     } catch (error) {
       console.log('ERROR', error);
       res.status(500).json({ error: 'Erro ao deletar o usuário ' });
