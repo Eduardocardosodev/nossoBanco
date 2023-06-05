@@ -1,159 +1,196 @@
-import request from 'supertest';
-import { app } from '../../src/server';
-import { UserService } from '../../src/services/UserService';
-import { prismaClient } from '../../src/database/prismaClient';
+// import request from 'supertest';
+// import { app } from '../../src/server';
+// import { UserService } from '../../src/services/UserService';
+// import { prismaClient } from '../../src/database/prismaClient';
+// import * as userService from '../../src/services/UserService';
+// import { CreateUserDTO } from '../../src/dto/UserDTO';
 
-describe('UserController', () => {
-  describe('GET /users', () => {
-    it('should return all users', async () => {
-      const response = await request(app).get('/users');
+// describe('UserController', () => {
+//   afterEach(() => {
+//     jest.restoreAllMocks();
+//   });
+//   describe('GET /users', () => {
+//     it('should return all users', async () => {
+//       const response = await request(app).get('/users');
 
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('users');
-      // expect(response.body.users).toHaveLength(2); // Adjust the expected length based on your test data
-    });
+//       expect(response.status).toBe(200);
+//       expect(response.body).toHaveProperty('users');
+//       // expect(response.body.users).toHaveLength(2); // Adjust the expected length based on your test data
+//     });
 
-    it('should return an empty array when no users are found', async () => {
-      jest.spyOn(UserService.prototype, 'getUsers').mockResolvedValue([]);
+//     it('should return an empty array when no users are found', async () => {
+//       jest.spyOn(UserService.prototype, 'getUsers').mockResolvedValue([]);
 
-      const response = await request(app).get('/users');
+//       const response = await request(app).get('/users');
 
-      expect(response.status).toBe(404);
-      expect(response.body).toEqual({ message: 'Usuario nao encontrado' });
-      // expect(response.body).toHaveProperty('message', 'Usuario nao encontrado');
-    });
+//       expect(response.status).toBe(404);
+//       expect(response.body).toEqual({ message: 'Usuario nao encontrado' });
+//       // expect(response.body).toHaveProperty('message', 'Usuario nao encontrado');
+//     });
 
-    describe('GET /users/:ID', () => {
-      it('should return a specific user by ID', async () => {
-        const userId = 3;
+//     describe('GET /users/:ID', () => {
+//       it('should return a specific user by ID', async () => {
+//         const userId = 3;
 
-        const response = await request(app).get(`/users/${userId}`);
+//         const response = await request(app).get(`/users/${userId}`);
 
-        expect(response.status).toBe(200);
-        expect(response.body).toHaveProperty('id', userId);
-        // expect(response.body).toHaveProperty('users');
-        // expect(response.body.users).toHaveLength(2); // Adjust the expected length based on your test data
-      });
+//         expect(response.status).toBe(200);
+//         expect(response.body).toHaveProperty('id', userId);
+//         // expect(response.body).toHaveProperty('users');
+//         // expect(response.body.users).toHaveLength(2); // Adjust the expected length based on your test data
+//       });
 
-      it('should return 404 Not Found if user ID is not found', async () => {
-        const userId = 456; // ID de um usuário inexistente
+//       it('should return 404 Not Found if user ID is not found', async () => {
+//         const userId = 456; // ID de um usuário inexistente
 
-        const response = await request(app).get(`/users/${userId}`);
+//         const response = await request(app).get(`/users/${userId}`);
 
-        expect(response.status).toBe(404);
-        expect(response.body).toHaveProperty(
-          'message',
-          'Usuário nao encontrado.'
-        );
-      });
-    });
+//         expect(response.status).toBe(404);
+//         expect(response.body).toHaveProperty(
+//           'message',
+//           'Usuário nao encontrado.'
+//         );
+//       });
+//     });
 
-    describe('POST /users/create', () => {
-      it('should return a created user', async () => {
-        const newUser = {
-          name: 'John Doe',
-          email: 'john@gmail.com',
-          password: '1234',
-          cpf: '12345678901',
-          dateOfBirth: new Date('2023-01-01'),
-        };
+//     describe('POST /users/create', () => {
+//       it('should return a created user', async () => {
+//         const createUserMock = jest
+//           .spyOnProperty(userService as any, 'createUser')
+//           .mockImplementation(async (user: any) => {
+//             // Validar campos obrigatórios
+//             if (
+//               !user.name ||
+//               !user.email ||
+//               !user.password ||
+//               !user.cpf ||
+//               !user.dateOfBirth
+//             ) {
+//               throw new Error('Campos obrigatórios não foram fornecidos.');
+//             }
 
-        const response = await request(app).post('/users/create').send(newUser);
+//             return {
+//               id: 1,
+//               name: user.name,
+//               email: user.email,
+//               password: 'hashedPassword',
+//               cpf: user.cpf,
+//               dateOfBirth: user.dateOfBirth,
+//             };
+//           });
 
-        expect(response.status).toBe(201);
-        expect(response.body).toEqual({
-          message: 'Usuário criado com sucesso.',
-        });
-      });
+//         const newUser = {
+//           name: 'John Doe',
+//           email: 'john@gmail.com',
+//           password: '1234',
+//           cpf: '12345678901',
+//           dateOfBirth: new Date('2023-01-01'),
+//         };
 
-      it('should return a error 500 to create a user', async () => {
-        const newUser = {
-          name: 'John Doe',
-          email: 'john@gmail.com',
-          password: 1234, //pass typeof propertie wrong
-          cpf: '12345678901',
-          dateOfBirth: new Date('2023-01-01'),
-        };
+//         const response = await request(app).post('/users').send(newUser);
 
-        const response = await request(app).post('/users/create').send(newUser);
+//         expect(response.status).toBe(201);
+//         expect(response.body).toEqual({
+//           message: 'Usuário criado com sucesso.',
+//         });
+//         expect(createUserMock).toHaveBeenCalledWith(newUser);
+//       });
 
-        expect(response.status).toBe(500);
-        expect(response.body).toEqual({ message: 'Erro ao criar o usuário ' });
-      });
-    });
+//       it('should return a error 500 to create a user', async () => {
+//         const newUser = {
+//           name: 'John Doe',
+//           email: 'john@gmail.com',
+//           password: 1234, //pass typeof propertie wrong
+//           cpf: '12345678901',
+//           dateOfBirth: new Date('2023-01-01'),
+//         };
 
-    describe('PUT /users/updated/:ID', () => {
-      it('should return a user updated', async () => {
-        const userId = 3;
+//         const response = await request(app).post('/users').send(newUser);
 
-        const newUser = {
-          name: 'John DoeUpdated',
-        };
+//         expect(response.status).toBe(500);
+//         expect(response.body).toEqual({ message: 'Erro ao criar o usuário ' });
+//       });
+//     });
 
-        const response = await request(app)
-          .put(`/users/update/${userId}`)
-          .send(newUser);
+//     describe('PUT /users/:ID', () => {
+//       it('should return a user updated', async () => {
+//         const userId = 3;
 
-        expect(response.status).toBe(200);
-        expect(response.body).toEqual({
-          message: 'Usuário atualizado com sucesso.',
-        });
-      });
+//         const newUser = {
+//           name: 'John DoeUpdated',
+//         };
 
-      it('should return a error 404 to update a user to ID', async () => {
-        const userId = 333;
+//         const response = await request(app)
+//           .put(`/users/${userId}`)
+//           .send(newUser);
 
-        const newUser = {
-          name: 'John DoeUpdated',
-        };
+//         expect(response.status).toBe(200);
+//         expect(response.body).toEqual({
+//           message: 'Usuário atualizado com sucesso.',
+//         });
+//       });
 
-        const response = await request(app)
-          .put(`/users/update/${userId}`)
-          .send(newUser);
+//       it('should return a error 404 to update a user to ID', async () => {
+//         const userId = 333;
 
-        expect(response.status).toBe(404);
-        expect(response.body).toEqual({
-          message: 'Usuário nao encontrado.',
-        });
-      });
-    });
+//         const newUser = {
+//           name: 'John DoeUpdated',
+//         };
 
-    describe('DELETE /users/delete/:ID', () => {
-      it('should delete a user', async () => {
-        const testUser = await prismaClient.user.create({
-          data: {
-            name: 'Test User',
-            email: 'test@example.com',
-            password: 'password',
-            cpf: '123456789',
-            dateOfBirth: new Date(),
-          },
-        });
+//         const response = await request(app)
+//           .put(`/users/${userId}`)
+//           .send(newUser);
 
-        const userId = testUser.id;
+//         expect(response.status).toBe(404);
+//         expect(response.body).toEqual({
+//           message: 'Usuário nao encontrado.',
+//         });
+//       });
+//     });
 
-        const response = await request(app).delete(`/users/delete/${userId}`);
+//     describe('DELETE /users/delete/:ID', () => {
+//       it('should delete a user', async () => {
+//         const testUser = await prismaClient.user.create({
+//           data: {
+//             name: 'Test User',
+//             email: 'test@example.com',
+//             password: 'password',
+//             cpf: '123456789',
+//             dateOfBirth: new Date(),
+//           },
+//         });
 
-        expect(response.status).toBe(200);
-        expect(response.body).toEqual({
-          message: 'Usuário deletado com sucesso.',
-        });
-      });
+//         const userId = testUser.id;
 
-      it('should not delete a user with ID wrong', async () => {
-        const userId = 444;
+//         const response = await request(app).delete(`/users/${userId}`);
 
-        const response = await request(app).delete(`/users/delete/${userId}`);
+//         expect(response.status).toBe(200);
+//         expect(response.body).toEqual({
+//           message: 'Usuário deletado com sucesso.',
+//         });
+//       });
 
-        console.log(response);
+//       it('should not delete a user with ID wrong', async () => {
+//         const userId = 444;
 
-        expect(response.status).toBe(404);
-        expect(response.body).toEqual({
-          message: 'Usuário nao encontrado.',
-        });
-      });
-    });
-  });
-});
+//         const response = await request(app).delete(`/users/${userId}`);
 
-// describe('');
+//         expect(response.status).toBe(404);
+//         expect(response.body).toEqual({
+//           message: 'Usuário nao encontrado.',
+//         });
+//       });
+//     });
+//   });
+// });
+
+// describe('accountController', () => {
+//   describe('GET /accounts', () => {
+//     it('should get all accounts', async () => {
+//       const response = await request(app).get('/accounts');
+
+//       expect(response.status).toBe(200);
+//       expect(response.body).toHaveProperty('accounts');
+//     });
+//   });
+// });

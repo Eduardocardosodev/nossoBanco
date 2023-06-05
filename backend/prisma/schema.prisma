@@ -11,10 +11,34 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(60)
-  email       String   @db.VarChar(60)
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(60)
+  email       String    @unique @db.VarChar(60)
   password    String
-  cpf         String   @db.Char(11)
-  dateOfBirth DateTime @db.Time()
+  cpf         String    @unique @db.Char(11)
+  dateOfBirth DateTime  @db.Time()
+  account     Account[]
+}
+
+model Account {
+  id      Int     @id @default(autoincrement())
+  balance Decimal @default(100.00) @db.Decimal(10, 2)
+
+  user         User?          @relation(references: [id], fields: [user_id])
+  user_id      Int?
+  transactions Transactions[]
+
+  @@map("account")
+}
+
+model Transactions {
+  id                  Int     @id @default(autoincrement())
+  value               Decimal @db.Decimal(10, 2)
+  debitedTransaction  Boolean
+  creditedTransaction Boolean
+
+  account    Account? @relation(references: [id], fields: [account_id])
+  account_id Int?
+
+  @@map("transactions")
 }
