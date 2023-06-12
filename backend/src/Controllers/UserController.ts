@@ -73,7 +73,7 @@ class UserController {
 
       await this.accountService.createAccount({
         balance: 100.0,
-        user_id: user.id,
+        user_id: user.id!,
       });
 
       res.status(201).json({ message: 'Usuário criado com sucesso.' });
@@ -128,7 +128,7 @@ class UserController {
 
       const user = await this.userService.getById(Number(id));
 
-      const updatedUser = await this.userService.updateUser(Number(id), {
+      await this.userService.updateUser(Number(id), {
         name,
         email,
         cpf,
@@ -151,6 +151,10 @@ class UserController {
       const { id } = req.params;
 
       const user = await this.userService.getById(Number(id));
+
+      if (!user) {
+        throw new UserNotFound();
+      }
 
       await this.userService.deleteUser(Number(id));
 

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { verify } from 'jsonwebtoken';
+import { TokenExpiredError, verify } from 'jsonwebtoken';
 import { UserService } from '../services/UserService';
 import auth from '../config/auth';
 import { UserNotFound } from '../errors/UserNotFound';
@@ -16,6 +16,7 @@ export const AuthMiddleware =
       }
 
       const [, token] = authorization.split(' ');
+
       const decoded = verify(token, auth.jwt.secret) as { cpf: string };
 
       const { cpf } = decoded;
@@ -33,6 +34,8 @@ export const AuthMiddleware =
       if (error instanceof UserNotFound) {
         res.status(404).json({ error: error.message });
       } else if (error instanceof InvalidToken) {
+        return res.status(401).json({ error: error.message });
+      } else if (error instanceof TokenExpiredError) {
         return res.status(401).json({ error: error.message });
       } else {
         console.log(error.message);

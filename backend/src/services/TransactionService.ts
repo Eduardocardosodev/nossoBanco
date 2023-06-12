@@ -1,9 +1,10 @@
-import { Transactions } from '@prisma/client';
 import { SendMoneyDTO } from '../dto/AccountDTO';
 import { AccountService } from './AccountService';
 import { prismaClient } from '../database/prismaClient';
 import { AccountNotFound } from '../errors/AccountNotFound';
 import { InsufficientBalance } from '../errors/InsufficientBalance';
+import { Transaction } from '../entities/Transaction';
+import { TransactionNotFound } from '../errors/TransactionNotFound';
 
 export class TransactionService {
   private accountService: AccountService;
@@ -12,9 +13,30 @@ export class TransactionService {
     this.accountService = accountService;
   }
 
+  public getTransactions = async (): Promise<Transaction[]> => {
+    const transactions = await prismaClient.transactions.findMany();
+
+    if (transactions.length === 0) {
+      throw new TransactionNotFound();
+    }
+
+    const mappedTransactions: Transaction[] = transactions.map(
+      (transactions) => {
+        return new Transaction(
+          transactions.id,
+          Number(transactions.value),
+          transactions.creditedTransaction,
+          transactions.debitedTransaction
+        );
+      }
+    );
+
+    return mappedTransactions;
+  };
+
   public createTransaction = async (
     transactions: SendMoneyDTO
-  ): Promise<Transactions> => {
+  ): Promise<Transaction> => {
     // Verifique se as contas existem
     const senderAccount = await this.accountService.getById(
       transactions.senderAccountId
@@ -49,7 +71,7 @@ export class TransactionService {
     // Crie a transação
     const createdTransaction = await prismaClient.transactions.create({
       data: {
-        value: transactions.amount,
+        value: Number(transactions.amount),
         debitedTransaction: true, //senderAccount.id
         creditedTransaction: true, //recipientAccount.id
         account: {
@@ -60,6 +82,13 @@ export class TransactionService {
       },
     });
 
-    return createdTransaction;
+    const mappedTransactions: Transaction = new Transaction(
+      createdTransaction.id,
+      Number(createdTransaction.value),
+      createdTransaction.debitedTransaction,
+      createdTransaction.creditedTransaction
+    );
+
+    return mappedTransactions;
   };
 }

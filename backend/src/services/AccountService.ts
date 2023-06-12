@@ -1,17 +1,42 @@
-import { Account } from '@prisma/client';
 import { prismaClient } from '../database/prismaClient';
 import { CreateAccountDTO } from '../dto/AccountDTO';
+import { Account } from '../entities/Account';
 import { AccountNotFound } from '../errors/AccountNotFound';
 
 export class AccountService {
   public async getAccounts(): Promise<Account[]> {
-    return await prismaClient.account.findMany();
+    const accounts = await prismaClient.account.findMany({
+      orderBy: [
+        {
+          id: 'desc',
+        },
+      ],
+    });
+
+    // Mapeie os dados para suas entidades personalizadas
+    const mappedAccounts: Account[] = accounts.map((account) => {
+      return new Account(account.id, Number(account.balance));
+    });
+
+    return mappedAccounts;
   }
 
   public async getById(id: number): Promise<Account | null> {
-    return prismaClient.account.findUnique({
+    const account = await prismaClient.account.findUnique({
       where: { id },
     });
+
+    if (!account) {
+      return null;
+    }
+
+    // Mapeie os dados para sua entidade Account
+    const mappedAccount: Account = new Account(
+      account.id,
+      Number(account.balance)
+    );
+
+    return mappedAccount;
   }
 
   public async createAccount(accountDTO: CreateAccountDTO): Promise<Account> {
@@ -21,7 +46,13 @@ export class AccountService {
       },
     });
 
-    return newAccount;
+    // Mapeie os dados para sua entidade Account
+    const mappedAccount: Account = new Account(
+      newAccount.id,
+      Number(newAccount.balance)
+    );
+
+    return mappedAccount;
   }
 
   public async updateAccountBalance(

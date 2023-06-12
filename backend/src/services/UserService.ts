@@ -1,86 +1,77 @@
-import { User } from '@prisma/client';
 import { prismaClient } from '../database/prismaClient';
-import { CreateUserDTO, UpdateUserDTO } from '../dto/UserDTO';
+import { CreateUserDTO, UpdateUserDTO, UserDTO } from '../dto/UserDTO';
+import { User } from '../entities/User';
 import { EmailExists } from '../errors/EmailExists';
 import { UserNotFound } from '../errors/UserNotFound';
+import { UserRepository } from '../repositories/UserRepository';
 
 export class UserService {
+  private userRepository: UserRepository;
+
+  private mapUserDTOToUser(userDTO: UserDTO): User {
+    const { id, name, email, password, cpf, dateOfBirth } = userDTO;
+
+    return new User(id!, name!, email!, password!, cpf!, dateOfBirth!);
+  }
+  constructor(userRepository: UserRepository) {
+    this.userRepository = userRepository;
+  }
+
   public async getUsers(): Promise<User[]> {
-    const userNotFound = await prismaClient.user.findMany();
+    const userNotFound = await this.userRepository.getUsers();
 
     if (userNotFound.length === 0) {
       throw new UserNotFound();
     }
 
-    return await prismaClient.user.findMany();
+    return userNotFound.map((userDTO) => this.mapUserDTOToUser(userDTO));
   }
 
   public async getById(id: number): Promise<User | null> {
-    const userNotFound = await prismaClient.user.findUnique({
-      where: { id },
-    });
+    const userDTO = await this.userRepository.getById(id);
 
-    if (!userNotFound) {
+    if (!userDTO) {
       throw new UserNotFound();
     }
-    return userNotFound;
+    return this.mapUserDTOToUser(userDTO);
   }
 
   public async getByCpf(cpf: string): Promise<User | null> {
-    const userNotFound = await prismaClient.user.findFirst({
-      where: { cpf },
-    });
+    const userNotFound = await this.userRepository.getByCpf(cpf);
 
     if (!userNotFound) {
       throw new UserNotFound();
     }
-    return userNotFound;
+    return this.mapUserDTOToUser(userNotFound);
   }
 
   public async createUser(userDTO: CreateUserDTO): Promise<User> {
     const { email } = userDTO;
 
-    const existingUser = await prismaClient.user.findFirst({
-      where: { email },
-    });
+    const existingUser = await this.userRepository.getByEmail(email);
 
     if (existingUser) {
       throw new EmailExists();
     }
 
-    const newUser = await prismaClient.user.create({
-      data: {
-        ...userDTO,
-        dateOfBirth: userDTO.dateOfBirth.toISOString(),
-      },
-    });
+    const newUserDTO = await this.userRepository.createUser(userDTO);
 
-    return newUser;
+    return this.mapUserDTOToUser(newUserDTO);
   }
 
   public async updateUser(
     id: number,
     userDTO: UpdateUserDTO
   ): Promise<User | null> {
-    const userNotFound = await prismaClient.user.findUnique({
-      where: { id },
-    });
+    const userNotFound = await this.userRepository.getById(id);
 
     if (!userNotFound) {
       throw new UserNotFound();
     }
 
-    const updatedUser = await prismaClient.user.update({
-      where: {
-        id,
-      },
-      data: {
-        ...userDTO,
-        dateOfBirth: userDTO.dateOfBirth?.toISOString(),
-      },
-    });
+    const updatedUserDTO = await this.userRepository.updateUser(id, userDTO);
 
-    return updatedUser;
+    return this.mapUserDTOToUser(updatedUserDTO!);
   }
 
   public async deleteUser(id: number): Promise<void> {

@@ -3,6 +3,7 @@ import { SendMoneyDTO } from '../dto/AccountDTO';
 import { TransactionService } from '../services/TransactionService';
 import { AccountNotFound } from '../errors/AccountNotFound';
 import { InsufficientBalance } from '../errors/InsufficientBalance';
+import { TransactionNotFound } from '../errors/TransactionNotFound';
 
 export class TransactionController {
   private transactionService: TransactionService;
@@ -10,6 +11,21 @@ export class TransactionController {
   constructor(transactionService: TransactionService) {
     this.transactionService = transactionService;
   }
+
+  public index = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const transactions = await this.transactionService.getTransactions();
+
+      res.status(200).json({ transactions });
+    } catch (error: any) {
+      if (error instanceof TransactionNotFound) {
+        res.status(404).json({ error: error.message });
+      } else {
+        console.log(error.message);
+        res.status(500).json({ error: 'Erro ao listar transacoes' });
+      }
+    }
+  };
 
   public createTransaction = async (
     req: Request,
